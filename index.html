@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>우리집 이글스 예측리그</title>
+</head>
+<body>
+<h1>우리집 이글스 예측리그 (Firebase 연결 버전)</h1>
+<p>이 파일에 Firebase 설정값을 넣으면 가족 공유가 됩니다.</p>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBsx03x1izKAMROCK8lXYRJnDHc9KQcAIQ",
+  authDomain: "eagles-family.firebaseapp.com",
+  projectId: "eagles-family",
+  storageBucket: "eagles-family.firebasestorage.app",
+  messagingSenderId: "113170990737",
+  appId: "1:113170990737:web:6e69499d2bc309b23b6130"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+console.log("Firebase 연결 완료", db);
+</script>
+
+</body>
+</html>
