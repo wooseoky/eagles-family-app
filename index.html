@@ -1,465 +1,78 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>우리집 이글스 예측리그</title>
-  <style>
-    :root {
-      --bg: #111827;
-      --card: #1f2937;
-      --orange: #f97316;
-      --text: #f9fafb;
-      --muted: #cbd5e1;
-      --green: #22c55e;
-      --red: #ef4444;
-      --line: rgba(255,255,255,.12);
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
-      background: linear-gradient(180deg, #0f172a, #111827);
-      color: var(--text);
-      padding: 18px;
-    }
-    .wrap { max-width: 980px; margin: 0 auto; }
-    .hero {
-      background: linear-gradient(135deg, #f97316, #9a3412 55%, #111827);
-      border-radius: 28px;
-      padding: 24px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.35);
-      margin-bottom: 18px;
-    }
-    .eyebrow { font-size: 14px; color: #ffedd5; font-weight: 800; }
-    h1 { margin: 8px 0; font-size: clamp(30px, 7vw, 54px); line-height: 1.03; letter-spacing: -1.5px; }
-    .hero p { margin: 0; color: #ffedd5; }
-    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
-    .stat { background: rgba(255,255,255,.16); border-radius: 18px; padding: 14px; }
-    .stat small { color: #ffedd5; display: block; margin-bottom: 6px; }
-    .stat b { font-size: 24px; }
-
-    .status {
-      margin-top: 14px;
-      background: rgba(255,255,255,.14);
-      border: 1px solid rgba(255,255,255,.18);
-      border-radius: 14px;
-      padding: 10px 12px;
-      color: #ffedd5;
-      font-size: 14px;
-    }
-
-    .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; }
-    @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
-
-    .card {
-      background: rgba(31,41,55,.92);
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      padding: 18px;
-      margin-bottom: 18px;
-      box-shadow: 0 14px 35px rgba(0,0,0,.22);
-    }
-    h2 { margin: 0 0 6px; font-size: 22px; }
-    .desc { color: var(--muted); margin: 0 0 14px; font-size: 14px; line-height: 1.5; }
-    .members { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-    @media (max-width: 560px) { .members { grid-template-columns: repeat(2, 1fr); } }
-
-    button {
-      border: 0;
-      border-radius: 15px;
-      padding: 12px 14px;
-      font-weight: 900;
-      cursor: pointer;
-      background: #374151;
-      color: white;
-      font-size: 15px;
-    }
-    button:hover { filter: brightness(1.08); }
-    button.active { background: var(--orange); }
-    button.green { background: #16a34a; }
-    button.red { background: #dc2626; }
-    button.gray { background: #475569; }
-    button.small { padding: 8px 10px; font-size: 13px; border-radius: 12px; }
-    button.outline { background: transparent; border: 1px solid var(--line); }
-
-    .game {
-      background: rgba(15,23,42,.82);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 15px;
-      margin-top: 12px;
-    }
-    .gameTop { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
-    @media (max-width: 560px) { .gameTop { flex-direction: column; align-items: stretch; } }
-
-    .date { color: #94a3b8; font-size: 13px; }
-    .title { font-size: 18px; font-weight: 950; margin-top: 3px; }
-    .result { color: var(--muted); font-size: 14px; margin-top: 4px; }
-    .btnrow, .footerBtns { display: flex; flex-wrap: wrap; gap: 8px; }
-
-    .picks {
-      border-top: 1px solid var(--line);
-      margin-top: 13px;
-      padding-top: 13px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-    }
-    .pill {
-      font-size: 13px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      background: #334155;
-      color: #dbeafe;
-    }
-    .pill.correct { background: rgba(34,197,94,.22); color: #bbf7d0; }
-    .pill.wrong { background: rgba(239,68,68,.22); color: #fecaca; }
-    .pill.pending { background: rgba(249,115,22,.22); color: #fed7aa; }
-
-    .rank {
-      background: rgba(15,23,42,.82);
-      border-radius: 20px;
-      padding: 14px;
-      margin-top: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      border: 1px solid var(--line);
-    }
-    .rank.first { border-color: rgba(249,115,22,.8); background: rgba(249,115,22,.2); }
-    .rankNo {
-      width: 42px; height: 42px; border-radius: 15px;
-      background: rgba(255,255,255,.12);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 19px; font-weight: 950;
-    }
-    .rankLeft { display: flex; gap: 12px; align-items: center; }
-    .rankName { font-weight: 950; font-size: 18px; }
-    .rankMeta { color: var(--muted); font-size: 13px; margin-top: 2px; }
-    .rankScore { text-align: right; }
-    .rankScore b { font-size: 24px; display: block; }
-    .rankScore span { color: #fed7aa; font-size: 13px; }
-
-    input {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 15px;
-      padding: 12px;
-      background: #0f172a;
-      color: white;
-      outline: none;
-      font-size: 15px;
-    }
-    .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-    @media (max-width: 560px) { .inputs { grid-template-columns: 1fr; } }
-    .notice { color: var(--muted); line-height: 1.55; font-size: 14px; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>양떼목장 이글스 리그</title>
+<style>
+:root{--bg:#0f172a;--card:#1f2937;--soft:#273449;--line:rgba(255,255,255,.12);--text:#f8fafc;--muted:#cbd5e1;--dim:#94a3b8;--orange:#f97316;--green:#22c55e;--red:#ef4444;--yellow:#facc15}
+*{box-sizing:border-box}body{margin:0;background:#0f172a;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",Arial,sans-serif}.app{max-width:480px;margin:0 auto;min-height:100vh;background:linear-gradient(180deg,#0f172a,#111827 45%,#0f172a);padding-bottom:86px}.top{position:sticky;top:0;z-index:10;background:linear-gradient(135deg,#f97316,#c2410c 58%,#111827);padding:18px 16px 16px;border-bottom-left-radius:26px;border-bottom-right-radius:26px;box-shadow:0 14px 40px rgba(0,0,0,.38)}.brand{display:flex;align-items:center;justify-content:space-between;gap:12px}.eyebrow{font-size:12px;font-weight:900;color:#ffedd5}.brand h1{margin:4px 0 0;font-size:25px;line-height:1.1;letter-spacing:-.8px}.logoBox{width:54px;height:54px;border-radius:18px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.24);display:flex;align-items:center;justify-content:center;font-weight:1000;font-size:18px;text-align:center;line-height:1}.summaryRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.summaryCard{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.17);border-radius:18px;padding:12px}.summaryCard small{display:block;color:#ffedd5;font-size:12px;font-weight:800;margin-bottom:4px}.summaryCard b{font-size:19px}.sync{margin-top:10px;padding:9px 11px;border-radius:14px;background:rgba(15,23,42,.34);color:#ffedd5;font-size:12px;line-height:1.35}.screen{padding:14px;display:none}.screen.active{display:block}.card{background:rgba(31,41,55,.94);border:1px solid var(--line);border-radius:24px;padding:16px;margin-bottom:13px;box-shadow:0 12px 30px rgba(0,0,0,.24)}.soft{background:rgba(39,52,73,.84)}.fund{background:linear-gradient(135deg,rgba(249,115,22,.25),rgba(39,52,73,.85));border-color:rgba(249,115,22,.32)}.sectionTitle{margin:0 0 5px;font-size:19px;font-weight:1000}.desc{margin:0;color:var(--muted);font-size:13px;line-height:1.45}.chips,.badges{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}.chip{display:inline-flex;align-items:center;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.09);color:#e2e8f0;font-size:12px;font-weight:800}.chip.orange{background:rgba(249,115,22,.2);color:#fed7aa}.chip.green{background:rgba(34,197,94,.18);color:#bbf7d0}.chip.red{background:rgba(239,68,68,.18);color:#fecaca}.chip.yellow{background:rgba(250,204,21,.16);color:#fef08a}.familyGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px}button{font-family:inherit}.memberBtn{border:1px solid var(--line);background:#334155;color:white;border-radius:18px;padding:13px 10px;font-weight:1000;font-size:15px;min-height:50px}.memberBtn.active{background:linear-gradient(135deg,#f97316,#ea580c);box-shadow:0 10px 20px rgba(249,115,22,.22)}.avatar{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(255,255,255,.13);margin-right:7px;font-size:18px}.pickRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.pickBtn{border:0;border-radius:22px;padding:18px 12px;color:white;font-weight:1000;font-size:18px;box-shadow:0 12px 24px rgba(0,0,0,.22)}.pickBtn.win{background:linear-gradient(135deg,#f97316,#c2410c)}.pickBtn.lose{background:linear-gradient(135deg,#475569,#1e293b)}.pickBtn.selected{outline:3px solid rgba(255,255,255,.52);transform:translateY(-1px)}.pickBtn:disabled{opacity:.42;cursor:not-allowed}.statusList{display:grid;gap:8px;margin-top:13px}.statusItem{display:flex;align-items:center;justify-content:space-between;gap:8px;border-radius:17px;padding:11px 12px;background:rgba(15,23,42,.66);border:1px solid rgba(255,255,255,.08)}.statusName{display:flex;align-items:center;font-weight:900}.statusValue{font-size:13px;font-weight:900;color:#e2e8f0}.gameCard{background:rgba(15,23,42,.68);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:14px;margin-top:11px}.gameSub{color:var(--dim);font-size:12px;font-weight:700}.gameTitle{font-size:17px;font-weight:1000;margin-top:3px}.miniBtns{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.miniBtn{border:0;border-radius:14px;padding:9px 10px;color:white;font-size:13px;font-weight:900;background:#475569}.miniBtn.green{background:#16a34a}.miniBtn.red{background:#dc2626}.miniBtn.outline{background:transparent;border:1px solid var(--line)}.prizeGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.prizeBox{border-radius:18px;padding:13px;background:rgba(15,23,42,.52);border:1px solid rgba(255,255,255,.08)}.prizeBox small{color:var(--muted);font-weight:800}.prizeBox b{display:block;margin-top:4px;font-size:19px}.rankCard{background:rgba(15,23,42,.7);border:1px solid rgba(255,255,255,.1);border-radius:22px;padding:14px;margin-top:10px}.rankCard.topRank{border-color:rgba(250,204,21,.55);background:linear-gradient(135deg,rgba(250,204,21,.13),rgba(15,23,42,.76))}.rankHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}.rankPerson{display:flex;align-items:center;gap:10px;min-width:0}.bigAvatar{width:48px;height:48px;border-radius:18px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:25px}.rankName{font-size:17px;font-weight:1000}.rankSub{margin-top:2px;color:var(--muted);font-size:12px;font-weight:700}.rankScore{text-align:right;flex:0 0 auto}.rankScore b{display:block;font-size:21px;color:#fff7ed}.rankScore span{color:#fed7aa;font-size:12px;font-weight:900}.barWrap{margin-top:12px;height:16px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;border:1px solid rgba(255,255,255,.08)}.bar{height:100%;border-radius:999px;background:linear-gradient(90deg,#fb923c,#facc15)}textarea{width:100%;min-height:150px;resize:vertical;border:1px solid var(--line);border-radius:18px;padding:12px;background:#0f172a;color:white;outline:none;font-size:14px;line-height:1.5}input{width:100%;border:1px solid var(--line);border-radius:16px;padding:12px;background:#0f172a;color:white;outline:none;font-size:14px}.inputGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.fullBtn{width:100%;border:0;border-radius:18px;padding:14px 12px;background:linear-gradient(135deg,#f97316,#c2410c);color:white;font-size:15px;font-weight:1000;margin-top:10px}.fullBtn.gray{background:#475569}.help{color:var(--dim);font-size:12px;line-height:1.45;margin-top:9px}.bottomNav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(15,23,42,.96);border-top:1px solid rgba(255,255,255,.1);display:grid;grid-template-columns:repeat(4,1fr);padding:8px 8px calc(8px + env(safe-area-inset-bottom));z-index:20;backdrop-filter:blur(10px)}.navBtn{border:0;background:transparent;color:#94a3b8;border-radius:16px;padding:8px 4px;font-size:12px;font-weight:900}.navBtn.active{background:rgba(249,115,22,.18);color:#fed7aa}.empty{padding:20px 8px;text-align:center;color:var(--muted);line-height:1.5;font-size:14px}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <section class="hero">
-      <div class="eyebrow">한화 이글스 가족 승패 예측 리그</div>
-      <h1>우리집 이글스<br/>예측리그</h1>
-      <p>가족 4명이 같은 링크로 들어와 승패를 찍고, 월간 순위를 자동으로 봅니다.</p>
-      <div class="stats">
-        <div class="stat"><small>이번 달 판돈</small><b id="pot">160,000원</b></div>
-        <div class="stat"><small>결과 입력</small><b id="decided">0/0경기</b></div>
-      </div>
-      <div class="status" id="syncStatus">Firebase 연결 중...</div>
-    </section>
-
-    <div class="grid">
-      <main>
-        <section class="card">
-          <h2>오늘 예측할 사람</h2>
-          <p class="desc">가족 멤버를 선택한 뒤 경기별 승/패를 누르세요. 이 선택값은 내 기기에만 저장됩니다.</p>
-          <div class="members" id="members"></div>
-        </section>
-
-        <section class="card">
-          <h2>경기 예측 & 결과 입력</h2>
-          <p class="desc">현재 선택: <b id="selectedName" style="color:#fdba74;">아빠</b></p>
-          <div id="games"></div>
-        </section>
-      </main>
-
-      <aside>
-        <section class="card">
-          <h2>월간 순위</h2>
-          <p class="desc">가족 모두의 입력값을 Firebase에서 실시간으로 불러와 정렬합니다.</p>
-          <div id="standings"></div>
-        </section>
-
-        <section class="card">
-          <h2>경기 추가</h2>
-          <p class="desc">예: 5월 7일 / vs 키움</p>
-          <div class="inputs">
-            <input id="newDate" placeholder="날짜" />
-            <input id="newOpponent" placeholder="상대팀" />
-          </div>
-          <div class="footerBtns" style="margin-top:12px;">
-            <button onclick="addGame()">경기 추가</button>
-            <button class="gray" onclick="resetAll()">전체 초기화</button>
-          </div>
-        </section>
-
-        <section class="card">
-          <h2>운영 룰</h2>
-          <p class="notice">
-            엄마·아빠 각 5만 원, 아이들 각 3만 원으로 총 16만 원.<br/>
-            월간 1등은 10만 원, 2등은 6만 원.<br/>
-            경기 시작 후 수정 제한, PIN 로그인, 실제 KBO 일정 자동 연동은 다음 버전 기능입니다.
-          </p>
-        </section>
-      </aside>
-    </div>
-  </div>
-
+<div class="app">
+<header class="top">
+  <div class="brand"><div><div class="eyebrow">가족 승패 예측 리그</div><h1>양떼목장<br>이글스 리그</h1></div><div class="logoBox">E<br>agles</div></div>
+  <div class="summaryRow"><div class="summaryCard"><small>이번 달 펀딩</small><b id="topPot">160,000원</b></div><div class="summaryCard"><small>현재 1위</small><b id="topLeader">-</b></div></div>
+  <div class="sync" id="syncStatus">Firebase 연결 중...</div>
+</header>
+<main>
+<section id="screen-today" class="screen active">
+  <div class="card"><h2 class="sectionTitle">오늘의 예측</h2><p class="desc" id="todayDesc">오늘 경기 정보를 불러오는 중입니다.</p><div id="todayBody"></div></div>
+  <div class="card soft"><h2 class="sectionTitle">내 이름 선택</h2><p class="desc">내 이름을 먼저 고른 뒤 승/패를 입력하세요.</p><div class="familyGrid" id="todayMembers"></div></div>
+  <div class="card fund"><h2 class="sectionTitle">이번 달 상금</h2><p class="desc">아빠·엄마 5만 원, 다연·성연 각 3만 원. 총 16만 원을 모아 월말에 정산합니다.</p><div class="prizeGrid"><div class="prizeBox"><small>🥇 1위</small><b>100,000원</b></div><div class="prizeBox"><small>🥈 2위</small><b>60,000원</b></div></div></div>
+</section>
+<section id="screen-games" class="screen"><div class="card"><h2 class="sectionTitle">전체 경기</h2><p class="desc">경기 시작 전에는 선택 내용이 숨겨지고, 시작 후 공개됩니다.</p><div id="gamesList"></div></div></section>
+<section id="screen-rank" class="screen">
+  <div class="card fund"><h2 class="sectionTitle">월간 리그 순위</h2><p class="desc">점수 기준 정렬. 상금은 현재 순위 기준 예상 수령액입니다.</p><div class="prizeGrid"><div class="prizeBox"><small>총 펀딩</small><b>160,000원</b></div><div class="prizeBox"><small>상금 구조</small><b>10만 / 6만</b></div></div><div class="badges"><span class="chip orange">적중 +1</span><span class="chip green">3연속 적중 +1</span><span class="chip green">5연속 적중 +2</span><span class="chip red">3연속 실패 +0.5</span><span class="chip red">5연속 실패 +1</span></div></div>
+  <div class="card"><h2 class="sectionTitle">가족별 점수 그래프</h2><p class="desc">가족 아바타와 바그래프로 현재 순위를 보여줍니다.</p><div id="rankList"></div></div>
+</section>
+<section id="screen-admin" class="screen">
+  <div class="card"><h2 class="sectionTitle">월간 일정 붙여넣기</h2><p class="desc">월초에 한 달치 일정을 아래 형식으로 붙여넣으세요.</p><textarea id="scheduleText" placeholder="2026-05-01, 두산, 18:30, 대전&#10;2026-05-02, 두산, 18:30, 대전&#10;2026-05-03, LG, 17:00, 잠실"></textarea><button class="fullBtn" onclick="importSchedule()">일정 등록</button><p class="help">형식: 날짜, 상대팀, 시작시간, 구장</p></div>
+  <div class="card"><h2 class="sectionTitle">개별 경기 추가</h2><div class="inputGrid"><input id="newDate" placeholder="2026-05-01"><input id="newOpponent" placeholder="두산"><input id="newTime" placeholder="18:30"><input id="newStadium" placeholder="대전"></div><button class="fullBtn" onclick="addGame()">경기 추가</button></div>
+  <div class="card"><h2 class="sectionTitle">결과 입력</h2><p class="desc">경기 종료 후 결과만 눌러주세요. 순위와 점수는 자동 계산됩니다.</p><div id="adminResults"></div></div>
+  <div class="card"><h2 class="sectionTitle">관리</h2><button class="fullBtn gray" onclick="resetMonth()">월 데이터 초기화</button><p class="help">초기화하면 경기, 예측, 결과가 모두 기본값으로 돌아갑니다.</p></div>
+</section>
+</main>
+<nav class="bottomNav"><button class="navBtn active" onclick="showTab('today')">오늘</button><button class="navBtn" onclick="showTab('games')">경기</button><button class="navBtn" onclick="showTab('rank')">순위</button><button class="navBtn" onclick="showTab('admin')">관리</button></nav>
+</div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import {
-  getFirestore, doc, onSnapshot, setDoc, updateDoc, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBsx03x1izKAMROCK8lXYRJnDHc9KQcAIQ",
-  authDomain: "eagles-family.firebaseapp.com",
-  projectId: "eagles-family",
-  storageBucket: "eagles-family.firebasestorage.app",
-  messagingSenderId: "113170990737",
-  appId: "1:113170990737:web:6e69499d2bc309b23b6130"
-};
-
-const FAMILY = [
-  { id: "dad", name: "아빠", stake: 50000 },
-  { id: "mom", name: "엄마", stake: 50000 },
-  { id: "child1", name: "아이 1", stake: 30000 },
-  { id: "child2", name: "아이 2", stake: 30000 },
-];
-
-const PRIZES = [100000, 60000, 0, 0];
-
-const DEFAULT_GAMES = [
-  { id: 1, date: "5월 1일", opponent: "vs 두산", predictions: {}, result: null },
-  { id: 2, date: "5월 2일", opponent: "vs 두산", predictions: {}, result: null },
-  { id: 3, date: "5월 3일", opponent: "vs 두산", predictions: {}, result: null },
-  { id: 4, date: "5월 5일", opponent: "vs LG", predictions: {}, result: null },
-  { id: 5, date: "5월 6일", opponent: "vs LG", predictions: {}, result: null },
-];
-
-let selectedMember = localStorage.getItem("eagles_selected") || "dad";
-let games = [];
-let leagueRef;
-
-function won(n) {
-  return n.toLocaleString("ko-KR") + "원";
-}
-
-function label(v) {
-  if (v === "W") return "승";
-  if (v === "L") return "패";
-  return "미입력";
-}
-
-function setStatus(text) {
-  document.getElementById("syncStatus").textContent = text;
-}
-
-async function boot() {
-  renderMembers();
-  try {
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    leagueRef = doc(db, "leagues", "eagles-family-2026-05");
-
-    onSnapshot(
-      leagueRef,
-      async (snap) => {
-        if (!snap.exists()) {
-          await setDoc(leagueRef, {
-            games: DEFAULT_GAMES,
-            updatedAt: serverTimestamp()
-          });
-          return;
-        }
-        games = snap.data().games || DEFAULT_GAMES;
-        setStatus("Firebase 연결 완료 · 가족 모두 같은 데이터를 보고 있습니다.");
-        render();
-      },
-      (error) => {
-        console.error(error);
-        setStatus("Firebase 연결 오류: Firestore 규칙을 확인하세요.");
-        games = DEFAULT_GAMES;
-        render();
-      }
-    );
-  } catch (error) {
-    console.error(error);
-    setStatus("Firebase 초기화 오류: 설정값을 확인하세요.");
-    games = DEFAULT_GAMES;
-    render();
-  }
-}
-
-async function saveGames(nextGames) {
-  games = nextGames;
-  render();
-
-  if (!leagueRef) {
-    setStatus("Firebase 연결 전이라 화면에서만 임시 반영됩니다.");
-    return;
-  }
-
-  await updateDoc(leagueRef, {
-    games,
-    updatedAt: serverTimestamp()
-  });
-}
-
-function renderMembers() {
-  const el = document.getElementById("members");
-  el.innerHTML = FAMILY.map(m => `
-    <button class="${m.id === selectedMember ? 'active' : ''}" onclick="selectMember('${m.id}')">${m.name}</button>
-  `).join("");
-  document.getElementById("selectedName").textContent = FAMILY.find(m => m.id === selectedMember).name;
-}
-
-function renderGames() {
-  const el = document.getElementById("games");
-  el.innerHTML = games.map(g => {
-    const myPick = g.predictions?.[selectedMember];
-    const pills = FAMILY.map(m => {
-      const p = g.predictions?.[m.id];
-      let cls = "";
-      if (g.result && p === g.result) cls = "correct";
-      else if (g.result && p && p !== g.result) cls = "wrong";
-      else if (p) cls = "pending";
-      return `<span class="pill ${cls}">${m.name}: ${label(p)}</span>`;
-    }).join("");
-
-    return `
-      <div class="game">
-        <div class="gameTop">
-          <div>
-            <div class="date">${g.date}</div>
-            <div class="title">한화 ${g.opponent}</div>
-            <div class="result">실제 결과: <b>${label(g.result)}</b></div>
-          </div>
-          <div class="btnrow">
-            <button class="${myPick === 'W' ? 'active' : ''}" onclick="predict(${g.id}, 'W')">한화 승</button>
-            <button class="${myPick === 'L' ? 'active' : ''}" onclick="predict(${g.id}, 'L')">한화 패</button>
-          </div>
-        </div>
-        <div class="picks">${pills}</div>
-        <div class="footerBtns" style="margin-top:12px;">
-          <button class="small green" onclick="setResult(${g.id}, 'W')">결과 승</button>
-          <button class="small red" onclick="setResult(${g.id}, 'L')">결과 패</button>
-          <button class="small outline" onclick="clearResult(${g.id})">결과 취소</button>
-          <button class="small outline" onclick="deleteGame(${g.id})">경기 삭제</button>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-function renderStandings() {
-  const decided = games.filter(g => g.result).length;
-
-  const rows = FAMILY.map(m => {
-    const submitted = games.filter(g => g.predictions?.[m.id]).length;
-    const correct = games.filter(g => g.result && g.predictions?.[m.id] === g.result).length;
-    const rate = decided ? Math.round(correct / decided * 100) : 0;
-    return { ...m, submitted, correct, rate };
-  })
-    .sort((a,b) => b.correct - a.correct || b.rate - a.rate || a.name.localeCompare(b.name))
-    .map((r, i) => ({ ...r, rank: i + 1, prize: PRIZES[i] }));
-
-  document.getElementById("standings").innerHTML = rows.map(r => `
-    <div class="rank ${r.rank === 1 ? 'first' : ''}">
-      <div class="rankLeft">
-        <div class="rankNo">${r.rank}</div>
-        <div>
-          <div class="rankName">${r.name}</div>
-          <div class="rankMeta">제출 ${r.submitted}회 · 적중률 ${r.rate}%</div>
-        </div>
-      </div>
-      <div class="rankScore">
-        <b>${r.correct}개</b>
-        <span>상금 ${won(r.prize)}</span>
-      </div>
-    </div>
-  `).join("");
-
-  document.getElementById("decided").textContent = `${decided}/${games.length}경기`;
-  document.getElementById("pot").textContent = won(FAMILY.reduce((s,m) => s + m.stake, 0));
-}
-
-function render() {
-  renderMembers();
-  renderGames();
-  renderStandings();
-}
-
-window.selectMember = function(id) {
-  selectedMember = id;
-  localStorage.setItem("eagles_selected", selectedMember);
-  render();
-}
-
-window.predict = async function(gameId, pick) {
-  const next = games.map(g => g.id === gameId ? {
-    ...g,
-    predictions: { ...(g.predictions || {}), [selectedMember]: pick }
-  } : g);
-  await saveGames(next);
-}
-
-window.setResult = async function(gameId, result) {
-  await saveGames(games.map(g => g.id === gameId ? { ...g, result } : g));
-}
-
-window.clearResult = async function(gameId) {
-  await saveGames(games.map(g => g.id === gameId ? { ...g, result: null } : g));
-}
-
-window.addGame = async function() {
-  const date = document.getElementById("newDate").value.trim();
-  const opponent = document.getElementById("newOpponent").value.trim();
-
-  if (!date || !opponent) {
-    alert("날짜와 상대팀을 모두 입력해주세요.");
-    return;
-  }
-
-  const next = [
-    ...games,
-    {
-      id: Date.now(),
-      date,
-      opponent,
-      predictions: {},
-      result: null
-    }
-  ];
-
-  document.getElementById("newDate").value = "";
-  document.getElementById("newOpponent").value = "";
-  await saveGames(next);
-}
-
-window.deleteGame = async function(gameId) {
-  if (!confirm("이 경기를 삭제할까요?")) return;
-  await saveGames(games.filter(g => g.id !== gameId));
-}
-
-window.resetAll = async function() {
-  if (!confirm("모든 예측과 결과를 초기화할까요?")) return;
-  await saveGames(JSON.parse(JSON.stringify(DEFAULT_GAMES)));
-}
-
-boot();
+import { getFirestore, doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyBsx03x1izKAMROCK8lXYRJnDHc9KQcAIQ",authDomain:"eagles-family.firebaseapp.com",projectId:"eagles-family",storageBucket:"eagles-family.firebasestorage.app",messagingSenderId:"113170990737",appId:"1:113170990737:web:6e69499d2bc309b23b6130"};
+const FAMILY=[{id:"dad",name:"아빠",avatar:"👨",stake:50000,order:1},{id:"mom",name:"엄마",avatar:"👩",stake:50000,order:2},{id:"dayeon",name:"다연",avatar:"👧",stake:30000,order:3},{id:"seongyeon",name:"성연",avatar:"👧",stake:30000,order:4}];
+const PRIZES=[100000,60000,0,0];
+const DEFAULT_GAMES=[{id:"2026-05-01-doosan",date:"2026-05-01",opponent:"두산",time:"18:30",stadium:"대전",predictions:{},result:null},{id:"2026-05-02-doosan",date:"2026-05-02",opponent:"두산",time:"18:30",stadium:"대전",predictions:{},result:null},{id:"2026-05-03-doosan",date:"2026-05-03",opponent:"두산",time:"17:00",stadium:"대전",predictions:{},result:null}];
+let selectedMember=localStorage.getItem("eagles_selected")||"dad",games=[],leagueRef;
+const won=n=>n.toLocaleString("ko-KR")+"원";
+const pickLabel=v=>v==="W"?"한화 승":v==="L"?"한화 패":"미입력";
+const resultLabel=v=>v==="W"?"한화 승":v==="L"?"한화 패":v==="C"?"취소":"미입력";
+const setStatus=t=>document.getElementById("syncStatus").textContent=t;
+function parseLocalDateTime(g){const d=new Date(`${g.date}T${g.time||"00:00"}:00`);return Number.isNaN(d.getTime())?new Date(0):d}
+function isStarted(g){return new Date()>=parseLocalDateTime(g)}
+function monthKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
+function getTodayGame(){const d=new Date(),s=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;return games.filter(g=>g.date===s).sort((a,b)=>(a.time||"").localeCompare(b.time||""))[0]||games.filter(g=>parseLocalDateTime(g)>=d).sort((a,b)=>parseLocalDateTime(a)-parseLocalDateTime(b))[0]||games.slice().sort((a,b)=>parseLocalDateTime(b)-parseLocalDateTime(a))[0]}
+async function boot(){renderMembers();try{const app=initializeApp(firebaseConfig),db=getFirestore(app);leagueRef=doc(db,"leagues","eagles-family-"+monthKey());onSnapshot(leagueRef,async snap=>{if(!snap.exists()){await setDoc(leagueRef,{games:DEFAULT_GAMES,updatedAt:serverTimestamp()});return}games=snap.data().games||DEFAULT_GAMES;setStatus("Firebase 연결 완료 · 가족 모두 같은 데이터를 보고 있습니다.");renderAll()},err=>{console.error(err);setStatus("Firebase 연결 오류: Firestore 규칙을 확인하세요.");games=DEFAULT_GAMES;renderAll()})}catch(e){console.error(e);setStatus("Firebase 초기화 오류: 설정값을 확인하세요.");games=DEFAULT_GAMES;renderAll()}}
+async function saveGames(next){games=next;renderAll();if(!leagueRef){setStatus("Firebase 연결 전이라 화면에서만 임시 반영됩니다.");return}await updateDoc(leagueRef,{games,updatedAt:serverTimestamp()})}
+function calculateStandings(){const sg=games.filter(g=>g.result==="W"||g.result==="L").sort((a,b)=>parseLocalDateTime(a)-parseLocalDateTime(b));return FAMILY.map(m=>{let correct=0,wrong=0,cs=0,ws=0,maxC=0,maxW=0,bc3=0,bc5=0,bw3=0,bw5=0;sg.forEach(g=>{const p=g.predictions?.[m.id];if(!p){cs=0;ws=0;return}if(p===g.result){correct++;cs++;ws=0;maxC=Math.max(maxC,cs);if(cs===3)bc3++;if(cs===5)bc5++}else{wrong++;ws++;cs=0;maxW=Math.max(maxW,ws);if(ws===3)bw3++;if(ws===5)bw5++}});const bonus=bc3+bc5*2+bw3*.5+bw5;return{...m,correct,wrong,submitted:games.filter(g=>g.predictions?.[m.id]).length,score:correct+bonus,bonusScore:bonus,bonusCorrect3:bc3,bonusCorrect5:bc5,bonusWrong3:bw3,bonusWrong5:bw5,maxCorrectStreak:maxC,maxWrongStreak:maxW}}).sort((a,b)=>b.score-a.score||b.correct-a.correct||(a.order||99)-(b.order||99)).map((r,i)=>({...r,rank:i+1,prize:PRIZES[i]}))}
+function renderMembers(){const html=FAMILY.map(m=>`<button class="memberBtn ${m.id===selectedMember?"active":""}" onclick="selectMember('${m.id}')"><span class="avatar">${m.avatar}</span>${m.name}</button>`).join("");const e=document.getElementById("todayMembers");if(e)e.innerHTML=html}
+function renderTopSummary(){const s=calculateStandings();document.getElementById("topPot").textContent=won(FAMILY.reduce((a,m)=>a+m.stake,0));document.getElementById("topLeader").textContent=s[0]?s[0].name:"-"}
+function renderToday(){const body=document.getElementById("todayBody"),desc=document.getElementById("todayDesc"),g=getTodayGame();if(!g){desc.textContent="등록된 경기가 없습니다. 관리 탭에서 월간 일정을 등록하세요.";body.innerHTML=`<div class="empty">관리 탭에서 한 달치 일정을 먼저 붙여넣어 주세요.</div>`;return}const started=isStarted(g),my=g.predictions?.[selectedMember],member=FAMILY.find(m=>m.id===selectedMember);desc.textContent=started?"경기 시작 시간이 지나 전체 예측이 공개되었습니다.":"경기 시작 전까지는 다른 가족의 선택이 보이지 않습니다.";const rows=FAMILY.map(m=>{const p=g.predictions?.[m.id];let v,cls="";if(started){v=pickLabel(p);cls=p?"green":""}else if(m.id===selectedMember){v=pickLabel(p);cls=p?"orange":""}else{v=p?"입력 완료":"아직";cls=p?"green":""}return `<div class="statusItem"><div class="statusName"><span class="avatar">${m.avatar}</span>${m.name}</div><div class="statusValue ${cls}">${v}</div></div>`}).join("");body.innerHTML=`<div class="chips"><span class="chip orange">한화 vs ${g.opponent}</span><span class="chip">${g.date}</span><span class="chip">${g.time||"-"}</span><span class="chip">${g.stadium||"구장 미입력"}</span><span class="chip ${started?"green":"yellow"}">${started?"예측 공개":"비공개 중"}</span></div><div class="pickRow"><button class="pickBtn win ${my==="W"?"selected":""}" ${started?"disabled":""} onclick="predict('${g.id}','W')">한화 승</button><button class="pickBtn lose ${my==="L"?"selected":""}" ${started?"disabled":""} onclick="predict('${g.id}','L')">한화 패</button></div><p class="help">현재 선택: <b style="color:#fed7aa">${member?.name||""}</b>${started?" · 경기 시작 후에는 예측을 수정할 수 없습니다.":" · 경기 시작 전까지 수정 가능합니다."}</p><div class="card soft" style="margin:14px 0 0;padding:13px"><h2 class="sectionTitle" style="font-size:17px">가족 입력 현황</h2><div class="statusList">${rows}</div></div>`}
+function renderGames(){const box=document.getElementById("gamesList");if(!games.length){box.innerHTML=`<div class="empty">등록된 경기가 없습니다.</div>`;return}box.innerHTML=games.slice().sort((a,b)=>parseLocalDateTime(a)-parseLocalDateTime(b)).map(g=>{const started=isStarted(g);const rows=FAMILY.map(m=>{const p=g.predictions?.[m.id],shown=started?pickLabel(p):(p?"입력 완료":"아직"),cls=started?(p?"orange":""):(p?"green":"");return `<span class="chip ${cls}">${m.name}: ${shown}</span>`}).join("");return `<div class="gameCard"><div class="gameSub">${g.date} · ${g.time||"-"} · ${g.stadium||""}</div><div class="gameTitle">한화 vs ${g.opponent}</div><div class="chips"><span class="chip ${started?"green":"yellow"}">${started?"예측 공개":"예측 비공개"}</span><span class="chip ${g.result==="W"?"green":g.result==="L"?"red":""}">결과: ${resultLabel(g.result)}</span></div><div class="badges">${rows}</div></div>`}).join("")}
+function renderRank(){const list=document.getElementById("rankList"),s=calculateStandings();if(!s.length){list.innerHTML=`<div class="empty">순위 데이터가 없습니다.</div>`;return}const max=Math.max(...s.map(r=>r.score),1);list.innerHTML=s.map(r=>{const pct=Math.max(6,Math.round(r.score/max*100)),medal=r.rank===1?"👑":r.rank===2?"🥈":r.rank===3?"🥉":"🏅";const bonus=[r.bonusCorrect3?`<span class="chip green">3연속 적중 ${r.bonusCorrect3}회</span>`:"",r.bonusCorrect5?`<span class="chip green">5연속 적중 ${r.bonusCorrect5}회</span>`:"",r.bonusWrong3?`<span class="chip red">3연속 실패 ${r.bonusWrong3}회</span>`:"",r.bonusWrong5?`<span class="chip red">5연속 실패 ${r.bonusWrong5}회</span>`:""].join("");return `<div class="rankCard ${r.rank===1?"topRank":""}"><div class="rankHeader"><div class="rankPerson"><div class="bigAvatar">${r.avatar}</div><div><div class="rankName">${medal} ${r.rank}위 · ${r.name}</div><div class="rankSub">적중 ${r.correct}회 · 실패 ${r.wrong}회 · 보너스 ${r.bonusScore}점</div></div></div><div class="rankScore"><b>${r.score.toFixed(1)}점</b><span>${won(r.prize)}</span></div></div><div class="barWrap"><div class="bar" style="width:${pct}%"></div></div><div class="badges"><span class="chip orange">예상 수령액 ${won(r.prize)}</span><span class="chip">최고 적중연속 ${r.maxCorrectStreak}</span><span class="chip">최고 실패연속 ${r.maxWrongStreak}</span>${bonus||`<span class="chip">연속 보너스 없음</span>`}</div></div>`}).join("")}
+function renderAdmin(){const box=document.getElementById("adminResults");if(!games.length){box.innerHTML=`<div class="empty">결과를 입력할 경기가 없습니다.</div>`;return}box.innerHTML=games.slice().sort((a,b)=>parseLocalDateTime(a)-parseLocalDateTime(b)).map(g=>`<div class="gameCard"><div class="gameSub">${g.date} · ${g.time||"-"} · ${g.stadium||""}</div><div class="gameTitle">한화 vs ${g.opponent}</div><div class="chips"><span class="chip">현재 결과: ${resultLabel(g.result)}</span></div><div class="miniBtns"><button class="miniBtn green" onclick="setResult('${g.id}','W')">한화 승</button><button class="miniBtn red" onclick="setResult('${g.id}','L')">한화 패</button><button class="miniBtn outline" onclick="setResult('${g.id}','C')">취소</button><button class="miniBtn outline" onclick="clearResult('${g.id}')">결과 취소</button><button class="miniBtn outline" onclick="deleteGame('${g.id}')">삭제</button></div></div>`).join("")}
+function renderAll(){renderMembers();renderTopSummary();renderToday();renderGames();renderRank();renderAdmin()}
+window.showTab=t=>{document.querySelectorAll(".screen").forEach(e=>e.classList.remove("active"));document.getElementById("screen-"+t).classList.add("active");document.querySelectorAll(".navBtn").forEach(e=>e.classList.remove("active"));["today","games","rank","admin"].forEach((x,i)=>{if(x===t)document.querySelectorAll(".navBtn")[i].classList.add("active")});renderAll()}
+window.selectMember=id=>{selectedMember=id;localStorage.setItem("eagles_selected",id);renderAll()}
+window.predict=async(id,pick)=>{const g=games.find(x=>x.id===id);if(!g)return;if(isStarted(g)){alert("경기 시작 후에는 예측을 수정할 수 없습니다.");return}await saveGames(games.map(x=>x.id===id?{...x,predictions:{...(x.predictions||{}),[selectedMember]:pick}}:x))}
+window.setResult=async(id,result)=>saveGames(games.map(g=>g.id===id?{...g,result}:g))
+window.clearResult=async id=>saveGames(games.map(g=>g.id===id?{...g,result:null}:g))
+window.deleteGame=async id=>{if(confirm("이 경기를 삭제할까요?"))await saveGames(games.filter(g=>g.id!==id))}
+function slug(t){return String(t||"").trim().replace(/\s+/g,"-").replace(/[^\w가-힣-]/g,"").toLowerCase()}
+window.importSchedule=async()=>{const raw=document.getElementById("scheduleText").value.trim();if(!raw){alert("일정을 붙여넣어 주세요.");return}const lines=raw.split(/\n+/).map(v=>v.trim()).filter(Boolean),parsed=[];for(const line of lines){const parts=line.split(",").map(v=>v.trim());if(parts.length<3){alert("형식이 맞지 않는 줄이 있습니다: "+line);return}const[date,opponent,time,stadium=""]=parts;parsed.push({id:`${date}-${slug(opponent)}-${time.replace(":","")}`,date,opponent,time,stadium,predictions:{},result:null})}if(confirm(`${parsed.length}개 경기를 등록할까요? 기존 경기와 예측은 교체됩니다.`)){await saveGames(parsed);document.getElementById("scheduleText").value="";showTab("games")}}
+window.addGame=async()=>{const date=document.getElementById("newDate").value.trim(),opponent=document.getElementById("newOpponent").value.trim(),time=document.getElementById("newTime").value.trim(),stadium=document.getElementById("newStadium").value.trim();if(!date||!opponent||!time){alert("날짜, 상대팀, 시간을 입력해주세요.");return}await saveGames([...games,{id:`${date}-${slug(opponent)}-${time.replace(":","")}-${Date.now()}`,date,opponent,time,stadium,predictions:{},result:null}].sort((a,b)=>parseLocalDateTime(a)-parseLocalDateTime(b)));["newDate","newOpponent","newTime","newStadium"].forEach(id=>document.getElementById(id).value="");showTab("games")}
+window.resetMonth=async()=>{if(confirm("월 데이터를 초기화할까요? 경기, 예측, 결과가 모두 초기화됩니다.")){await saveGames(JSON.parse(JSON.stringify(DEFAULT_GAMES)));showTab("today")}}
+boot();setInterval(renderAll,60000);
 </script>
 </body>
 </html>
