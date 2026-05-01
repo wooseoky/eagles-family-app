@@ -275,7 +275,7 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
     <section id="screen-games" class="screen">
       <div class="card">
         <h2>전체 경기</h2>
-        <p class="desc">지난 경기, 오늘 경기, 예정 경기를 색상으로 구분했습니다.</p>
+        <p class="desc">지난 경기, 오늘 경기, 예정 경기를 색상으로 구분했습니다. 경기별 결과와 공개 상태만 간단히 보여줍니다.</p>
         <div id="gamesList"></div>
       </div>
     </section>
@@ -670,7 +670,7 @@ function renderToday(){
     ? "경기 시작 시간이 지나 전체 예측이 공개되었습니다."
     : "경기 시작 전까지는 다른 가족의 선택이 보이지 않습니다.";
 
-  const rows = FAMILY.map(m => {
+  const rows = calculateStandings().map(m => {
     const p = g.predictions?.[m.id];
     let value = "아직";
     let cls = "";
@@ -685,7 +685,7 @@ function renderToday(){
       cls = p ? "green" : "";
     }
     return `<div class="statusItem">
-      <div class="statusName">${avatarHtml(m)} ${m.name}</div>
+      <div class="statusName">${avatarHtml(m)} ${m.rank}위 · ${m.name}</div>
       <div class="statusValue ${cls}">${value}</div>
     </div>`;
   }).join("");
@@ -726,13 +726,6 @@ function renderGames(){
   box.innerHTML = games.slice().sort((a,b)=>parseTime(a)-parseTime(b)).map(g => {
     const started = isStarted(g);
     const status = getGameStatus(g);
-    const rows = FAMILY.map(m => {
-      const p = g.predictions?.[m.id];
-      const shown = started ? pickLabel(p) : (p ? "입력 완료" : "아직");
-      const cls = started ? (p ? "orange" : "") : (p ? "green" : "");
-      return `<span class="chip ${cls}">${m.name}: ${shown}</span>`;
-    }).join("");
-
     const statusChip = status === "today" ? "orange" : status === "future" ? "mint" : "";
 
     return `<div class="gameCard ${status}">
@@ -743,7 +736,6 @@ function renderGames(){
         <span class="chip ${started ? "green" : "yellow"}">${started ? "예측 공개" : "예측 비공개"}</span>
         <span class="chip ${g.result==="W" ? "green" : g.result==="L" ? "red" : ""}">결과: ${resultLabel(g.result)}</span>
       </div>
-      <div class="badges">${rows}</div>
     </div>`;
   }).join("");
 }
