@@ -245,6 +245,39 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
 .modalContent img{width:100%;border-radius:22px;display:block}
 .modalContent h3{margin:12px 0 0;font-size:18px}
 .modalContent button{margin-top:12px;border:0;background:#f97316;color:#fff;border-radius:14px;font-weight:1000;padding:10px 16px}
+
+.todayTitleRow{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px
+}
+.todayTitleRow h2{margin:0}
+.loginInline{
+  display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;
+  padding:6px 8px;border-radius:999px;background:#fff7ed;border:1px solid #fed7aa;
+  color:#9a3412;font-size:11px;font-weight:1000;white-space:nowrap
+}
+.loginInline button{
+  border:0;background:#f97316;color:#fff;border-radius:999px;padding:5px 7px;
+  font-size:10px;font-weight:1000
+}
+.leaderCard{
+  background:linear-gradient(135deg,#ffffff,#fff7ed);
+  border:1px solid #fdba74;border-radius:24px;padding:15px;margin-bottom:13px;
+  box-shadow:0 12px 28px rgba(249,115,22,.14)
+}
+.leaderContent{display:flex;align-items:center;gap:14px;margin-top:10px}
+.leaderAvatar{
+  width:96px;height:96px;border-radius:30px;overflow:hidden;flex:0 0 auto;
+  border:4px solid #fff;box-shadow:0 10px 24px rgba(15,23,42,.16);
+  background:#ffedd5;display:flex;align-items:center;justify-content:center
+}
+.leaderAvatar img{width:100%;height:100%;object-fit:cover;display:block}
+.leaderStats{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1}
+.leaderStat{
+  background:#fff;border:1px solid #fed7aa;border-radius:16px;padding:10px;text-align:center
+}
+.leaderStat small{display:block;color:#9a3412;font-size:11px;font-weight:900}
+.leaderStat b{display:block;margin-top:3px;color:#111827;font-size:17px}
+
 </style>
 </head>
 <body>
@@ -264,10 +297,13 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
 
   <main>
     <section id="screen-today" class="screen active">
+      <div id="todayLeader"></div>
       <div class="card">
-        <h2>오늘의 예측</h2>
-        <p class="desc" id="todayDesc"></p>
-        <div id="todayLoginMini"></div>
+        <div class="todayTitleRow">
+          <h2>오늘의 예측</h2>
+          <div id="todayLoginMini"></div>
+        </div>
+        <p class="desc" id="todayDesc" style="display:none;"></p>
         <div id="todayBody"></div>
       </div>
     </section>
@@ -385,8 +421,8 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
 
   <nav class="nav">
     <button class="navBtn active" onclick="showTab('today')">오늘</button>
-    <button class="navBtn" onclick="showTab('games')">경기</button>
     <button class="navBtn" onclick="showTab('rank')">순위</button>
+    <button class="navBtn" onclick="showTab('games')">경기</button>
     <button class="navBtn" onclick="showTab('rules')">룰</button>
     <button class="navBtn" onclick="showTab('settings')">설정</button>
   </nav>
@@ -595,33 +631,89 @@ function getTodayGame(){
 
 function calculateStandings(){
   const done = games.filter(g => g.result==="W" || g.result==="L").sort((a,b)=>parseTime(a)-parseTime(b));
-  return FAMILY.map(m => {
+
+  const rows = FAMILY.map(m => {
     let correct=0, wrong=0, cs=0, ws=0, maxC=0, maxW=0, bc3=0, bc5=0, bw3=0, bw5=0;
+    let currentCorrectStreak=0, currentWrongStreak=0;
+
     done.forEach(g => {
       const p = g.predictions?.[m.id];
-      if(!p){ cs=0; ws=0; return; }
+      if(!p){
+        cs=0; ws=0;
+        currentCorrectStreak=0; currentWrongStreak=0;
+        return;
+      }
       if(p === g.result){
         correct++; cs++; ws=0; maxC=Math.max(maxC, cs);
+        currentCorrectStreak = cs;
+        currentWrongStreak = 0;
         if(cs===3) bc3++;
         if(cs===5) bc5++;
       }else{
         wrong++; ws++; cs=0; maxW=Math.max(maxW, ws);
+        currentWrongStreak = ws;
+        currentCorrectStreak = 0;
         if(ws===3) bw3++;
         if(ws===5) bw5++;
       }
     });
+
     const bonus = bc3 + bc5*2 + bw3*0.5 + bw5;
-    return { ...m, correct, wrong, score:correct+bonus, bonus, bc3, bc5, bw3, bw5, maxC, maxW };
-  }).sort((a,b)=>b.score-a.score || b.correct-a.correct || a.order-b.order)
-    .map((r,i)=>({ ...r, rank:i+1, prize:PRIZES[i] }));
+    return { ...m, correct, wrong, score:correct+bonus, bonus, bc3, bc5, bw3, bw5, maxC, maxW, currentCorrectStreak, currentWrongStreak };
+  });
+
+  rows.sort((a,b)=>b.score-a.score || b.correct-a.correct || a.order-b.order);
+
+  let prevScore = null;
+  let prevCorrect = null;
+  let currentRank = 0;
+
+  return rows.map((r,i)=>{
+    if(prevScore === null || r.score !== prevScore || r.correct !== prevCorrect){
+      currentRank = i + 1;
+      prevScore = r.score;
+      prevCorrect = r.correct;
+    }
+    const prize = currentRank === 1 ? PRIZES[0] : currentRank === 2 ? PRIZES[1] : 0;
+    return { ...r, rank:currentRank, prize };
+  });
 }
 
 function renderAll(){
   renderMembers();
+  renderTodayLeader();
   renderToday();
   renderGames();
   renderRank();
   renderAdmin();
+}
+
+function renderTodayLeader(){
+  const box = document.getElementById("todayLeader");
+  if(!box) return;
+
+  const leader = calculateStandings()[0];
+  if(!leader){
+    box.innerHTML = "";
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="leaderCard">
+      <h2>현재 1위</h2>
+      <div class="leaderContent">
+        <div class="leaderAvatar" onclick="openAvatar('${leader.avatar}','${leader.name}', event)">
+          <img src="${leader.avatar}" alt="${leader.name}" onerror="this.remove(); this.parentElement.innerHTML='<span class=&quot;initial&quot;>${leader.initial}</span>';">
+        </div>
+        <div class="leaderStats">
+          <div class="leaderStat"><small>점수</small><b>${leader.score.toFixed(1)}점</b></div>
+          <div class="leaderStat"><small>적중</small><b>${leader.correct}회</b></div>
+          <div class="leaderStat"><small>실패</small><b>${leader.wrong}회</b></div>
+          <div class="leaderStat"><small>보너스</small><b>${leader.bonus}점</b></div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderMembers(){
@@ -649,8 +741,8 @@ function renderToday(){
 
   const auth = FAMILY.find(m => m.id === authenticatedMember);
   loginMini.innerHTML = `
-    <div class="loginMini">
-      <strong>${auth ? `현재 접속: ${auth.name}` : "현재 접속: 미인증"}</strong>
+    <div class="loginInline">
+      <span>${auth ? `현재 접속: ${auth.name}` : "미인증"}</span>
       <button onclick="showTab('settings')">${auth ? "설정" : "이름 선택"}</button>
     </div>
   `;
@@ -666,11 +758,9 @@ function renderToday(){
   const missing = FAMILY.filter(m => !g.predictions?.[m.id]).map(m => m.name);
   const alert = !started && authenticatedMember && !g.predictions?.[authenticatedMember];
 
-  desc.textContent = started
-    ? "경기 시작 시간이 지나 전체 예측이 공개되었습니다."
-    : "경기 시작 전까지는 다른 가족의 선택이 보이지 않습니다.";
+  desc.textContent = "";
 
-  const rows = calculateStandings().map(m => {
+  const rows = FAMILY.map(m => {
     const p = g.predictions?.[m.id];
     let value = "아직";
     let cls = "";
@@ -685,7 +775,7 @@ function renderToday(){
       cls = p ? "green" : "";
     }
     return `<div class="statusItem">
-      <div class="statusName">${avatarHtml(m)} ${m.rank}위 · ${m.name}</div>
+      <div class="statusName">${avatarHtml(m)} ${m.name}</div>
       <div class="statusValue ${cls}">${value}</div>
     </div>`;
   }).join("");
@@ -719,11 +809,27 @@ function renderToday(){
   `;
 }
 
+
+function getGamesForDisplay(){
+  const today = dateString(new Date());
+  const sorted = games.slice().sort((a,b)=>parseTime(a)-parseTime(b));
+  const todayGames = sorted.filter(g => g.date === today);
+  if(todayGames.length){
+    return [...todayGames, ...sorted.filter(g => g.date !== today)];
+  }
+  const future = sorted.filter(g => g.date > today);
+  if(future.length){
+    const firstFuture = future[0];
+    return [firstFuture, ...sorted.filter(g => g.id !== firstFuture.id)];
+  }
+  return sorted.reverse();
+}
+
 function renderGames(){
   const box = document.getElementById("gamesList");
   if(!games.length){ box.innerHTML = `<div class="empty">등록된 경기가 없습니다.</div>`; return; }
 
-  box.innerHTML = games.slice().sort((a,b)=>parseTime(a)-parseTime(b)).map(g => {
+  box.innerHTML = getGamesForDisplay().map(g => {
     const started = isStarted(g);
     const status = getGameStatus(g);
     const statusChip = status === "today" ? "orange" : status === "future" ? "mint" : "";
@@ -771,7 +877,8 @@ function renderRank(){
       </div>
       <div class="barWrap"><div class="bar" style="width:${pct}%; background:${r.color};"></div></div>
       <div class="badges">
-        <span class="chip orange">예상 수령액 ${won(r.prize)}</span>
+        <span class="chip green">현재 적중연속 ${r.currentCorrectStreak}회</span>
+        <span class="chip red">현재 실패연속 ${r.currentWrongStreak}회</span>
         <span class="chip">최고 적중연속 ${r.maxC}</span>
         <span class="chip">최고 실패연속 ${r.maxW}</span>
         ${bonus}
@@ -814,7 +921,7 @@ window.showTab = function(tab){
   document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
   document.getElementById("screen-" + tab).classList.add("active");
   document.querySelectorAll(".navBtn").forEach(el => el.classList.remove("active"));
-  ["today","games","rank","rules","settings"].forEach((id,idx) => {
+  ["today","rank","games","rules","settings"].forEach((id,idx) => {
     if(id === tab) document.querySelectorAll(".navBtn")[idx].classList.add("active");
   });
   renderAll();
