@@ -344,6 +344,20 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
   color:#374151;
 }
 
+
+.adminOnlyNotice{
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  border-radius:18px;
+  padding:12px;
+  color:#9a3412;
+  font-size:13px;
+  font-weight:900;
+  line-height:1.45;
+  margin-bottom:13px;
+}
+.adminArea.hidden{display:none}
+
 </style>
 </head>
 <body>
@@ -451,9 +465,11 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
         <button class="fullBtn gray" onclick="logoutMember()">접속 해제</button>
       </div>
 
+      <div id="adminGateNotice" class="adminOnlyNotice"></div>
+      <div id="adminArea" class="adminArea">
       <div class="card">
         <h2>월간 일정 붙여넣기</h2>
-        <p class="desc">관리자 PIN 필요. 형식: 날짜, 요일, 상대팀, 시간, 장소</p>
+        <p class="desc">아빠 계정 전용. 형식: 날짜, 요일, 상대팀, 시간, 장소</p>
         <textarea id="scheduleText" placeholder="2026-05-01, 금, 삼성, 17:00, 대구&#10;2026-05-02, 토, 삼성, 17:00, 대구"></textarea>
         <button class="fullBtn" onclick="importSchedule()">일정 등록</button>
         <button class="fullBtn mint" onclick="loadDefaultMaySchedule()">5월 기본 일정 불러오기</button>
@@ -474,7 +490,7 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
 
       <div class="card">
         <h2>관리자 예측 입력/수정</h2>
-        <p class="desc">관리자 PIN 필요. 경기 시작 전후와 상관없이 특정 날짜 경기의 가족별 예측을 입력하거나 수정할 수 있습니다.</p>
+        <p class="desc">아빠 계정 전용. 경기 시작 전후와 상관없이 특정 날짜 경기의 가족별 예측을 입력하거나 수정할 수 있습니다.</p>
         <div class="inputGrid">
           <input id="adminPredictDate" placeholder="2026-05-29">
           <button class="fullBtn" style="margin-top:0;" onclick="renderAdminPredictionEditor()">날짜 조회</button>
@@ -493,7 +509,9 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
         <h2>관리</h2>
         <button class="fullBtn gray" onclick="resetMonth()">월 데이터 초기화</button>
       </div>
-    </section>
+    
+      </div>
+      </section>
   </main>
 
   <nav class="nav">
@@ -762,7 +780,25 @@ function renderAll(){
   renderToday();
   renderGames();
   renderRank();
+  renderAdminGate();
   renderAdmin();
+}
+
+function renderAdminGate(){
+  const notice = document.getElementById("adminGateNotice");
+  const area = document.getElementById("adminArea");
+  if(!notice || !area) return;
+
+  if(isDadAdmin()){
+    notice.innerHTML = "아빠 계정으로 접속 중입니다. 관리자 기능을 사용할 수 있습니다.";
+    area.classList.remove("hidden");
+  }else{
+    const auth = FAMILY.find(m => m.id === authenticatedMember);
+    notice.innerHTML = auth
+      ? `현재 접속: ${auth.name}<br>관리자 기능은 아빠 계정에서만 사용할 수 있습니다.`
+      : "관리자 기능을 사용하려면 먼저 아빠 계정으로 접속해 주세요.";
+    area.classList.add("hidden");
+  }
 }
 
 function renderTodayLeader(){
@@ -985,14 +1021,16 @@ function renderAdmin(){
   `).join("");
 }
 
-function requireAdmin(){
-  if(adminUnlocked) return true;
-  const pin = prompt("관리자 PIN을 입력하세요.");
-  if(pin !== ADMIN_PIN){ alert("관리자 PIN이 맞지 않습니다."); return false; }
-  adminUnlocked = true;
-  localStorage.setItem("eagles_admin_unlocked","true");
-  return true;
+function isDadAdmin(){
+  return authenticatedMember === "dad";
 }
+
+function requireAdmin(){
+  if(isDadAdmin()) return true;
+  alert("관리자 기능은 아빠 계정으로 접속했을 때만 사용할 수 있습니다. 설정 탭에서 아빠로 접속해 주세요.");
+  return false;
+}
+
 
 window.showTab = function(tab){
   document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
