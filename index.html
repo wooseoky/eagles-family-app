@@ -278,6 +278,72 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
 .leaderStat small{display:block;color:#9a3412;font-size:11px;font-weight:900}
 .leaderStat b{display:block;margin-top:3px;color:#111827;font-size:17px}
 
+
+.adminPredictBox{
+  margin-top:12px;
+  display:grid;
+  gap:10px;
+}
+.adminPredictGame{
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  border-radius:18px;
+  padding:12px;
+}
+.adminPredictGameTitle{
+  font-weight:1000;
+  color:#111827;
+  margin-bottom:8px;
+}
+.adminPredictRows{
+  display:grid;
+  gap:8px;
+}
+.adminPredictRow{
+  display:grid;
+  grid-template-columns:76px 1fr;
+  gap:8px;
+  align-items:center;
+  background:#fff;
+  border:1px solid #f3f4f6;
+  border-radius:15px;
+  padding:8px;
+}
+.adminPredictName{
+  font-weight:1000;
+  font-size:13px;
+  color:#374151;
+}
+.adminPredictBtns{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:6px;
+}
+.adminPredictBtns button{
+  border:1px solid #e5e7eb;
+  background:#f9fafb;
+  color:#374151;
+  border-radius:12px;
+  padding:8px 5px;
+  font-size:12px;
+  font-weight:1000;
+}
+.adminPredictBtns button.activeWin{
+  background:#ffedd5;
+  border-color:#f97316;
+  color:#9a3412;
+}
+.adminPredictBtns button.activeLose{
+  background:#e0f2fe;
+  border-color:#38bdf8;
+  color:#075985;
+}
+.adminPredictBtns button.activeNone{
+  background:#f3f4f6;
+  border-color:#9ca3af;
+  color:#374151;
+}
+
 </style>
 </head>
 <body>
@@ -404,6 +470,17 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
           <input id="newStadium" placeholder="대구">
         </div>
         <button class="fullBtn" onclick="addGame()">경기 추가</button>
+      </div>
+
+      <div class="card">
+        <h2>관리자 예측 입력/수정</h2>
+        <p class="desc">관리자 PIN 필요. 경기 시작 전후와 상관없이 특정 날짜 경기의 가족별 예측을 입력하거나 수정할 수 있습니다.</p>
+        <div class="inputGrid">
+          <input id="adminPredictDate" placeholder="2026-05-29">
+          <button class="fullBtn" style="margin-top:0;" onclick="renderAdminPredictionEditor()">날짜 조회</button>
+        </div>
+        <div id="adminPredictionEditor" class="adminPredictBox"></div>
+        <p class="help">규칙 만료나 네트워크 오류로 저장되지 않은 가족 예측을 관리자가 대신 복구할 때 사용합니다.</p>
       </div>
 
       <div class="card">
@@ -979,6 +1056,75 @@ window.predictGame = async function(gameId, prediction){
     predictions: { ...(x.predictions || {}), [authenticatedMember]: prediction }
   } : x));
 };
+
+
+window.renderAdminPredictionEditor = function(){
+  if(!requireAdmin()) return;
+
+  const input = document.getElementById("adminPredictDate");
+  const box = document.getElementById("adminPredictionEditor");
+  if(!input || !box) return;
+
+  const date = input.value.trim();
+  if(!date){
+    box.innerHTML = `<div class="empty">수정할 날짜를 입력해 주세요.</div>`;
+    return;
+  }
+
+  const dayGames = games.filter(g => g.date === date).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+  if(!dayGames.length){
+    box.innerHTML = `<div class="empty">해당 날짜의 경기가 없습니다.</div>`;
+    return;
+  }
+
+  box.innerHTML = dayGames.map(g => {
+    const rows = FAMILY.map(m => {
+      const p = g.predictions?.[m.id] || "";
+      return `
+        <div class="adminPredictRow">
+          <div class="adminPredictName">${m.name}</div>
+          <div class="adminPredictBtns">
+            <button class="${p==="W" ? "activeWin" : ""}" onclick="adminSetPrediction('${g.id}','${m.id}','W')">승</button>
+            <button class="${p==="L" ? "activeLose" : ""}" onclick="adminSetPrediction('${g.id}','${m.id}','L')">패</button>
+            <button class="${!p ? "activeNone" : ""}" onclick="adminSetPrediction('${g.id}','${m.id}','')">미입력</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    return `
+      <div class="adminPredictGame">
+        <div class="adminPredictGameTitle">${g.date} ${g.weekday ? g.weekday + "요일" : ""} · ${g.time || "-"} · ${gameTitle(g)} · ${g.stadium || ""}</div>
+        <div class="adminPredictRows">${rows}</div>
+      </div>
+    `;
+  }).join("");
+};
+
+window.adminSetPrediction = async function(gameId, memberId, prediction){
+  if(!requireAdmin()) return;
+
+  const member = FAMILY.find(m => m.id === memberId);
+  const g = games.find(x => x.id === gameId);
+  if(!member || !g) return;
+
+  const label = prediction === "W" ? "한화 승" : prediction === "L" ? "한화 패" : "미입력";
+  if(!confirm(`${g.date} ${member.name} 예측을 '${label}'으로 저장할까요?`)) return;
+
+  await saveGames(games.map(x => {
+    if(x.id !== gameId) return x;
+    const predictions = { ...(x.predictions || {}) };
+    if(prediction){
+      predictions[memberId] = prediction;
+    }else{
+      delete predictions[memberId];
+    }
+    return { ...x, predictions };
+  }));
+
+  renderAdminPredictionEditor();
+};
+
 
 window.setResult = async function(id,result){
   if(!requireAdmin()) return;
