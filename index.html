@@ -230,7 +230,7 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
 .nav{
   position:fixed;left:50%;bottom:0;transform:translateX(-50%);
   width:100%;max-width:480px;background:rgba(255,255,255,.96);border-top:1px solid #fed7aa;
-  display:grid;grid-template-columns:repeat(5,1fr);padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+  display:grid;grid-template-columns:repeat(6,1fr);padding:8px 8px calc(8px + env(safe-area-inset-bottom));
   z-index:30;backdrop-filter:blur(10px);box-shadow:0 -10px 24px rgba(15,23,42,.06)
 }
 .navBtn{border:0;background:transparent;color:#9ca3af;border-radius:16px;padding:8px 3px;font-size:11px;font-weight:1000}
@@ -358,6 +358,15 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
 }
 .adminArea.hidden{display:none}
 
+
+.recordControls{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}
+.recordControls button{border:0;background:#f97316;color:#fff;border-radius:14px;font-weight:1000;padding:0 14px}
+.recordMonthTitle{margin-top:12px;padding:11px 12px;border-radius:16px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:13px;font-weight:1000}
+.recordSummary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.recordSummaryBox{background:#fff;border:1px solid #fed7aa;border-radius:18px;padding:12px;text-align:center}
+.recordSummaryBox small{display:block;color:#9a3412;font-size:11px;font-weight:900}
+.recordSummaryBox b{display:block;margin-top:4px;color:#111827;font-size:18px}
+
 </style>
 </head>
 <body>
@@ -401,6 +410,27 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
         <h2>가족별 점수 그래프</h2>
         <p class="desc">현재 순위와 예상 상금을 한눈에 볼 수 있습니다.</p>
         <div id="rankList"></div>
+      </div>
+    </section>
+
+
+    <section id="screen-records" class="screen">
+      <div class="card fund">
+        <h2>월별 기록</h2>
+        <p class="desc">지난달 순위와 점수도 다시 확인할 수 있습니다.</p>
+        <div class="recordControls">
+          <input id="recordMonthInput" placeholder="2026-05">
+          <button onclick="loadRecordMonth()">조회</button>
+        </div>
+        <div class="chips">
+          <span class="chip orange" onclick="quickRecordMonth(previousMonthKey())">지난달</span>
+          <span class="chip mint" onclick="quickRecordMonth(monthKey())">이번달</span>
+        </div>
+        <div id="recordMonthTitle" class="recordMonthTitle"></div>
+      </div>
+      <div class="card">
+        <h2>월별 순위</h2>
+        <div id="recordRankList"></div>
       </div>
     </section>
 
@@ -518,6 +548,7 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
     <button class="navBtn active" onclick="showTab('today')">오늘</button>
     <button class="navBtn" onclick="showTab('rank')">순위</button>
     <button class="navBtn" onclick="showTab('games')">경기</button>
+    <button class="navBtn" onclick="showTab('records')">기록</button>
     <button class="navBtn" onclick="showTab('rules')">룰</button>
     <button class="navBtn" onclick="showTab('settings')">설정</button>
   </nav>
@@ -533,7 +564,7 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { getFirestore, doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, doc, onSnapshot, setDoc, updateDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBsx03x1izKAMROCK8lXYRJnDHc9KQcAIQ",
@@ -590,6 +621,9 @@ let authenticatedMember = localStorage.getItem("eagles_auth_member") || "";
 let adminUnlocked = localStorage.getItem("eagles_admin_unlocked") === "true";
 let games = [];
 let leagueRef;
+let dbRef;
+let recordGames = [];
+let selectedRecordMonth = localStorage.getItem('eagles_record_month') || previousMonthKey();
 
 function won(n){ return n.toLocaleString("ko-KR") + "원"; }
 function pickLabel(v){ return v==="W" ? "한화 승" : v==="L" ? "한화 패" : "미입력"; }
@@ -597,6 +631,7 @@ function resultLabel(v){ return v==="W" ? "한화 승" : v==="L" ? "한화 패" 
 function parseTime(g){ const d = new Date(`${g.date}T${g.time || "00:00"}:00`); return Number.isNaN(d.getTime()) ? new Date(0) : d; }
 function isStarted(g){ return new Date() >= parseTime(g); }
 function monthKey(){ const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; }
+function previousMonthKey(){ const d = new Date(); d.setMonth(d.getMonth()-1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; }
 function slug(s){ return String(s||"").trim().replace(/\s+/g,"-").replace(/[^\w가-힣-]/g,"").toLowerCase(); }
 
 function weekdayFromDate(date){
@@ -654,8 +689,8 @@ function avatarHtml(member, big=false, clickable=true){
 async function boot(){
   try{
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    leagueRef = doc(db, "leagues", "eagles-family-" + monthKey());
+    dbRef = getFirestore(app);
+    leagueRef = doc(dbRef, "leagues", "eagles-family-" + monthKey());
 
     onSnapshot(leagueRef, async snap => {
       if(!snap.exists()){
@@ -665,6 +700,7 @@ async function boot(){
       games = normalizeGames(snap.data().games || DEFAULT_MAY_GAMES);
       showError("");
       renderAll();
+      if(!recordGames.length){ loadRecordMonth(); }
     }, err => {
       console.error(err);
       games = DEFAULT_MAY_GAMES;
@@ -774,12 +810,43 @@ function calculateStandings(){
   });
 }
 
+
+function calculateStandingsFor(gameList){
+  const done = (gameList || []).filter(g => g.result==="W" || g.result==="L").sort((a,b)=>parseTime(a)-parseTime(b));
+  const rows = FAMILY.map(m => {
+    let correct=0, wrong=0, cs=0, ws=0, maxC=0, maxW=0, bc3=0, bc5=0, bw3=0, bw5=0;
+    done.forEach(g => {
+      const p = g.predictions?.[m.id];
+      if(!p){ cs=0; ws=0; return; }
+      if(p === g.result){
+        correct++; cs++; ws=0; maxC=Math.max(maxC, cs);
+        if(cs===3) bc3++; if(cs===5) bc5++;
+      }else{
+        wrong++; ws++; cs=0; maxW=Math.max(maxW, ws);
+        if(ws===3) bw3++; if(ws===5) bw5++;
+      }
+    });
+    const bonus = bc3 + bc5*2 + bw3*0.5 + bw5;
+    return { ...m, correct, wrong, score:correct+bonus, bonus, bc3, bc5, bw3, bw5, maxC, maxW };
+  });
+  rows.sort((a,b)=>b.score-a.score || b.correct-a.correct || a.order-b.order);
+  let prevScore=null, prevCorrect=null, currentRank=0;
+  return rows.map((r,i)=>{
+    if(prevScore===null || r.score!==prevScore || r.correct!==prevCorrect){
+      currentRank=i+1; prevScore=r.score; prevCorrect=r.correct;
+    }
+    const prize = currentRank===1 ? PRIZES[0] : currentRank===2 ? PRIZES[1] : 0;
+    return { ...r, rank:currentRank, prize };
+  });
+}
+
 function renderAll(){
   renderMembers();
   renderTodayLeader();
   renderToday();
   renderGames();
   renderRank();
+  renderRecords();
   renderAdminGate();
   renderAdmin();
 }
@@ -1025,6 +1092,102 @@ function isDadAdmin(){
   return authenticatedMember === "dad";
 }
 
+
+function renderRecords(){
+  const input = document.getElementById("recordMonthInput");
+  const title = document.getElementById("recordMonthTitle");
+  const list = document.getElementById("recordRankList");
+  if(!input || !title || !list) return;
+
+  if(!input.value) input.value = selectedRecordMonth;
+  title.textContent = `${selectedRecordMonth} 리그 기록`;
+
+  if(!recordGames.length){
+    list.innerHTML = `<div class="empty">아직 불러온 기록이 없습니다. 월을 입력하고 조회를 눌러주세요.</div>`;
+    return;
+  }
+
+  const rows = calculateStandingsFor(recordGames);
+  const totalGames = recordGames.length;
+  const doneGames = recordGames.filter(g => g.result==="W" || g.result==="L").length;
+  const max = Math.max(...rows.map(r => r.score), 1);
+
+  const summary = `
+    <div class="recordSummary">
+      <div class="recordSummaryBox"><small>등록 경기</small><b>${totalGames}경기</b></div>
+      <div class="recordSummaryBox"><small>결과 입력</small><b>${doneGames}경기</b></div>
+    </div>
+  `;
+
+  const rankCards = rows.map(r => {
+    const pct = Math.max(6, Math.round(r.score / max * 100));
+    const medal = r.rank===1 ? "👑" : r.rank===2 ? "🥈" : r.rank===3 ? "🥉" : "🏅";
+    return `<div class="rankCard ${r.rank===1 ? "first" : ""}">
+      <div class="rankTop">
+        <div class="rankPerson">
+          ${avatarHtml(r,true)}
+          <div>
+            <div class="rankName">${medal} ${r.rank}위 · ${r.name}</div>
+            <div class="rankSub">적중 ${r.correct}회 · 실패 ${r.wrong}회 · 보너스 ${r.bonus}점</div>
+          </div>
+        </div>
+        <div class="rankScore">
+          <b>${r.score.toFixed(1)}점</b>
+          <span>${won(r.prize)}</span>
+        </div>
+      </div>
+      <div class="barWrap"><div class="bar" style="width:${pct}%; background:${r.color};"></div></div>
+      <div class="badges">
+        <span class="chip green">최고 적중연속 ${r.maxC}회</span>
+        <span class="chip red">최고 실패연속 ${r.maxW}회</span>
+        <span class="chip orange">상금 ${won(r.prize)}</span>
+      </div>
+    </div>`;
+  }).join("");
+
+  list.innerHTML = summary + rankCards;
+}
+
+window.loadRecordMonth = async function(){
+  const input = document.getElementById("recordMonthInput");
+  const month = (input?.value || "").trim();
+  if(!month){
+    alert("조회할 월을 2026-05 형식으로 입력해 주세요.");
+    return;
+  }
+  if(!dbRef){
+    alert("데이터 연결 전입니다. 잠시 후 다시 시도해 주세요.");
+    return;
+  }
+
+  try{
+    const ref = doc(dbRef, "leagues", "eagles-family-" + month);
+    const snap = await getDoc(ref);
+    selectedRecordMonth = month;
+    localStorage.setItem("eagles_record_month", month);
+
+    if(!snap.exists()){
+      recordGames = [];
+      renderRecords();
+      alert(`${month} 기록이 없습니다.`);
+      return;
+    }
+
+    recordGames = normalizeGames(snap.data().games || []);
+    renderRecords();
+  }catch(err){
+    console.error(err);
+    alert("기록을 불러오지 못했습니다. Firestore 규칙을 확인해 주세요.");
+  }
+};
+
+window.quickRecordMonth = function(month){
+  const input = document.getElementById("recordMonthInput");
+  if(input) input.value = month;
+  loadRecordMonth();
+};
+
+
 function requireAdmin(){
   if(isDadAdmin()) return true;
   alert("관리자 기능은 아빠 계정으로 접속했을 때만 사용할 수 있습니다. 설정 탭에서 아빠로 접속해 주세요.");
@@ -1036,7 +1199,7 @@ window.showTab = function(tab){
   document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
   document.getElementById("screen-" + tab).classList.add("active");
   document.querySelectorAll(".navBtn").forEach(el => el.classList.remove("active"));
-  ["today","rank","games","rules","settings"].forEach((id,idx) => {
+  ["today","rank","games","records","rules","settings"].forEach((id,idx) => {
     if(id === tab) document.querySelectorAll(".navBtn")[idx].classList.add("active");
   });
   renderAll();
