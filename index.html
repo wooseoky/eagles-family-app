@@ -367,20 +367,6 @@ textarea{min-height:145px;resize:vertical;line-height:1.5}
 .recordSummaryBox small{display:block;color:#9a3412;font-size:11px;font-weight:900}
 .recordSummaryBox b{display:block;margin-top:4px;color:#111827;font-size:18px}
 
-
-.raceCard{background:linear-gradient(180deg,#e0f7ff 0%,#f0fdfa 48%,#fff7ed 100%);border:1px solid #bae6fd;border-radius:24px;padding:15px;margin-bottom:13px;box-shadow:0 12px 28px rgba(56,189,248,.14);overflow:hidden;position:relative}
-.raceHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.raceHeader h2{margin:0}.raceHeader button{border:0;background:#fff;color:#075985;border-radius:999px;padding:8px 11px;font-size:12px;font-weight:1000;box-shadow:0 6px 14px rgba(15,23,42,.08)}
-.raceSub{margin:0 0 10px;color:#475569;font-size:13px;font-weight:800}
-.raceTrack{position:relative;height:250px;border-radius:22px;background:linear-gradient(90deg,rgba(255,255,255,.4),rgba(255,255,255,.08)),repeating-linear-gradient(180deg,#fb923c 0,#fb923c 42px,#fdba74 42px,#fdba74 45px);border:1px solid rgba(249,115,22,.3);overflow:hidden}
-.raceTrack::before{content:"";position:absolute;left:0;right:0;top:0;height:70px;background:linear-gradient(180deg,#bae6fd,#dff9ff);opacity:.9}
-.raceFinish{position:absolute;right:11px;top:72px;bottom:8px;width:26px;background:linear-gradient(45deg,#111 25%,transparent 25%,transparent 75%,#111 75%),linear-gradient(45deg,#111 25%,#fff 25%,#fff 75%,#111 75%);background-size:16px 16px;background-position:0 0,8px 8px;border-radius:6px;border:2px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.18)}
-.raceFinishLabel{position:absolute;right:4px;top:36px;background:#ef4444;color:#fff;border-radius:10px;padding:6px 9px;font-size:12px;font-weight:1000;box-shadow:0 6px 14px rgba(239,68,68,.22)}
-.runner{position:absolute;left:14px;width:86px;transition:left .45s ease, top .45s ease;text-align:center;z-index:2}
-.runnerBubble{display:inline-flex;align-items:center;justify-content:center;min-width:46px;padding:5px 8px;border-radius:999px;background:#fff;border:1px solid #fed7aa;color:#ea580c;font-weight:1000;font-size:13px;box-shadow:0 5px 12px rgba(15,23,42,.1);margin-bottom:4px}
-.runnerImg{width:56px;height:56px;border-radius:20px;border:3px solid #fff;box-shadow:0 8px 16px rgba(15,23,42,.16);overflow:hidden;background:#fff7ed;margin:0 auto}.runnerImg img{width:100%;height:100%;object-fit:cover;display:block}
-.runnerName{margin-top:3px;font-size:12px;font-weight:1000;color:#111827;text-shadow:0 1px 0 rgba(255,255,255,.8)}.runnerScore{font-size:11px;font-weight:1000;color:#475569}
-.raceNote{margin-top:10px;background:rgba(255,255,255,.76);border:1px solid rgba(255,255,255,.8);border-radius:16px;padding:9px 10px;color:#9a3412;font-size:12px;font-weight:900;text-align:center}
-
 </style>
 </head>
 <body>
@@ -886,58 +872,46 @@ function renderTodayLeader(){
   const box = document.getElementById("todayLeader");
   if(!box) return;
 
-  const rows = calculateStandings();
-  if(!rows.length){ box.innerHTML = ""; return; }
-
-  const maxScore = Math.max(...rows.map(r => r.score), 1);
-  const minScore = Math.min(...rows.map(r => r.score), 0);
-  const spread = Math.max(maxScore - minScore, 1);
-  const laneTops = [84, 126, 168, 210];
-
-  const runners = rows.map((r, idx) => {
-    let progress;
-    if(maxScore === minScore){
-      progress = 18 + (rows.length - idx - 1) * 4;
-    }else{
-      const rankLeader = rows.find(x => x.rank === r.rank) || r;
-      progress = 14 + ((rankLeader.score - minScore) / spread) * 62;
-    }
-    const left = Math.min(78, Math.max(8, progress));
-    const top = laneTops[idx] || (84 + idx * 42);
-    const rankText = r.rank === 1 ? "👑 1위" : `${r.rank}위`;
-
-    return `
-      <div class="runner" style="left:${left}%; top:${top}px;">
-        <div class="runnerBubble">${rankText}</div>
-        <div class="runnerImg" onclick="openAvatar('${r.avatar}','${r.name}', event)">
-          <img src="${r.avatar}" alt="${r.name}" onerror="this.remove(); this.parentElement.innerHTML='<span class=&quot;initial&quot;>${r.initial}</span>';">
-        </div>
-        <div class="runnerName">${r.name}</div>
-        <div class="runnerScore">${r.score.toFixed(1)}점</div>
-      </div>
-    `;
-  }).join("");
-
-  const topRankers = rows.filter(r => r.rank === 1).map(r => r.name).join(", ");
-  const isTie = rows.filter(r => r.rank === 1).length > 1;
+  const leader = calculateStandings()[0];
+  if(!leader){
+    box.innerHTML = "";
+    return;
+  }
 
   box.innerHTML = `
-    <div class="raceCard">
-      <div class="raceHeader">
-        <h2>오늘의 레이스</h2>
-        <button onclick="showTab('rank')">자세한 순위 보기</button>
+    <div class="leaderCard">
+      <h2>현재 1위</h2>
+      <div class="leaderContent">
+        <div class="leaderAvatar" onclick="openAvatar('${leader.avatar}','${leader.name}', event)">
+          <img src="${leader.avatar}" alt="${leader.name}" onerror="this.remove(); this.parentElement.innerHTML='<span class=&quot;initial&quot;>${leader.initial}</span>';">
+        </div>
+        <div class="leaderStats">
+          <div class="leaderStat"><small>점수</small><b>${leader.score.toFixed(1)}점</b></div>
+          <div class="leaderStat"><small>적중</small><b>${leader.correct}회</b></div>
+          <div class="leaderStat"><small>실패</small><b>${leader.wrong}회</b></div>
+          <div class="leaderStat"><small>보너스</small><b>${leader.bonus}점</b></div>
+        </div>
       </div>
-      <p class="raceSub">${topRankers} ${isTie ? "공동 1위!" : "선두!"} 결승선을 향해 달리는 중 🏁</p>
-      <div class="raceTrack">
-        <div class="raceFinishLabel">FINISH</div>
-        <div class="raceFinish"></div>
-        ${runners}
-      </div>
-      <div class="raceNote">동점은 같은 순위로 표시하고, 화면 순서는 아빠 → 엄마 → 다연 → 성연 기준을 유지합니다.</div>
     </div>
   `;
 }
 
+function renderMembers(){
+  const grid = document.getElementById("memberGrid");
+  if(grid){
+    grid.innerHTML = FAMILY.map(m => `
+      <button class="memberBtn ${selectedMember===m.id ? "active" : ""}" onclick="selectMember('${m.id}')">
+        ${avatarHtml(m,false,false)} ${m.name}${authenticatedMember===m.id ? " ✓" : ""}
+      </button>
+    `).join("");
+  }
+
+  const loginStatus = document.getElementById("loginStatus");
+  if(loginStatus){
+    const auth = FAMILY.find(m => m.id === authenticatedMember);
+    loginStatus.textContent = auth ? `현재 접속: ${auth.name}` : "현재 접속: 미인증";
+  }
+}
 
 function renderToday(){
   const g = getTodayGame();
